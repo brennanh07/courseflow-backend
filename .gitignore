@@ -148,6 +148,6 @@ db.sqlite3
 
 courseflow-surfacestudio.pem
 
-*.log
+.log*
 
 /logs
