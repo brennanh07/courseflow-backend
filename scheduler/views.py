@@ -9,7 +9,7 @@ from scheduler.serializers import (
 )
 
 from django.http import JsonResponse
-from main import process_schedules
+from .main import process_schedules
 # from logging_config import loggers
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
