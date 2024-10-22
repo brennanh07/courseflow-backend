@@ -73,7 +73,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://54.226.39.153",
     "http://54.226.39.153:3000",
     "https://54.226.39.153",
-    "http://54.226.39.153:8000"
+    "http://54.226.39.153:8000",
+    "https://courseflow-frontend.vercel.app/"
 ]
 
 CORS_ALLOW_METHODS = [
