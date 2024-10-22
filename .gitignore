@@ -151,3 +151,8 @@ courseflow-surfacestudio.pem
 .log*
 
 /logs
+
+logging_config.py
+
+backend.0\scheduler\logging_config.py
+
