@@ -10,11 +10,11 @@ from scheduler.serializers import (
 
 from django.http import JsonResponse
 from main import process_schedules
-from logging_config import loggers
+# from logging_config import loggers
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 
-logger = loggers['views']
+# logger = loggers['views']
 
 class BaseViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
@@ -60,7 +60,7 @@ class GenerateScheduleView(APIView):
     permission_classes = [AllowAny]
     
     def post(self, request, *args, **kwargs):
-        logger.info(f"Received schedule generation request: {request.data}")
+        # logger.info(f"Received schedule generation request: {request.data}")
         serializer = ScheduleInputSerializer(data=request.data)
         
         if serializer.is_valid():
@@ -76,7 +76,7 @@ class GenerateScheduleView(APIView):
                 "time_weight": user_input.get("time_weight"),
             }
             
-            logger.debug(f"Processed user input: courses={courses}, breaks={breaks}, preferences={preferences}")
+            # logger.debug(f"Processed user input: courses={courses}, breaks={breaks}, preferences={preferences}")
             
             try:
                 # Generate, score, and format schedules
@@ -86,13 +86,13 @@ class GenerateScheduleView(APIView):
                     preferences=preferences,
                     max_schedules=10
                 )
-                logger.info(f"Successfully generated {len(generated_schedules)} schedules")
+                # logger.info(f"Successfully generated {len(generated_schedules)} schedules")
                 return JsonResponse({"schedules": generated_schedules}, status=status.HTTP_200_OK)
             
             except Exception as e:
-                logger.error(f"Error generating schedules: {str(e)}")
-                logger.exception("Full traceback:")
+                # logger.error(f"Error generating schedules: {str(e)}")
+                # logger.exception("Full traceback:")
                 return Response({"error": f"Failed to generate schedules: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        logger.warning(f"Invalid input data: {serializer.errors}")
+        # logger.warning(f"Invalid input data: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

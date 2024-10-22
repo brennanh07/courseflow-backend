@@ -1,7 +1,7 @@
 from collections import defaultdict
-from logging_config import loggers
+# from logging_config import loggers
 
-logger = loggers['schedule_formatter']
+# logger = loggers['schedule_formatter']
 
 class ScheduleFormatter:
     """
@@ -50,7 +50,7 @@ class ScheduleFormatter:
                 try:
                     class_info = f"{section_time.crn.course}: {section_time.begin_time.strftime(self.date_format)} - {section_time.end_time.strftime(self.date_format)}"
                 except AttributeError as e:
-                    logger.error(f"Error formatting class info: {e}")
+                    # logger.error(f"Error formatting class info: {e}")
                     class_info = "Error: Unable to format class info"
                 
                 day_schedule[day_name].append((section_time.begin_time, class_info))
@@ -60,7 +60,8 @@ class ScheduleFormatter:
                     if section_time.crn.course not in crn_dict:
                         crn_dict[section_time.crn.course] = section_time.crn.crn
                 else:
-                    logger.error(f"section_time.crn does not have 'course' attribute: {section_time.crn}")
+                    pass
+                    # logger.error(f"section_time.crn does not have 'course' attribute: {section_time.crn}")
 
         # Create an ordered schedule
         ordered_schedule = {} 
@@ -104,6 +105,7 @@ class ScheduleFormatter:
                 }
                 formatted_schedules_list.append(formatted_schedule)
             except Exception as e:
-                logger.error(f"Error formatting schedule {i}: {e}")
+                print(f"Error formatting schedule {i}: {e}")
+                # logger.error(f"Error formatting schedule {i}: {e}")
         
         return formatted_schedules_list
