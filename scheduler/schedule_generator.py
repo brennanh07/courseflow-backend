@@ -1,7 +1,7 @@
 from collections import defaultdict
 import heapq
 from typing import List, Dict, Tuple, Any
-from schedule_scoring import ScheduleScorer
+from .schedule_scoring import ScheduleScorer
 import threading
 import time
 

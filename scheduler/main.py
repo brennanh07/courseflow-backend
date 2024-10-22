@@ -1,6 +1,6 @@
-from fetch_sections import SectionFetcher
-from schedule_formatter import ScheduleFormatter
-from schedule_generator import ScheduleGenerator
+from .fetch_sections import SectionFetcher
+from .schedule_formatter import ScheduleFormatter
+from .schedule_generator import ScheduleGenerator
 
 def process_schedules(courses, breaks, preferences, max_schedules=10):
     """
