@@ -52,3 +52,4 @@ tzdata==2024.1
 urllib3==2.2.2
 w3lib==2.2.1
 zope.interface==6.4.post2 --only-binary :all:
+cffi==1.15.0 --only-binary :all:
