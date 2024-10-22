@@ -16,8 +16,8 @@ django.setup()
 
 class SectionsSpider(scrapy.Spider):
     name = "sections"
-    allowed_domains = ["apps.es.vt.edu"]
-    start_urls = ["https://apps.es.vt.edu/ssb/HZSKVTSC.P_ProcRequest"]
+    allowed_domains = ["apps.es.vt.edu", "selfservice.banner.vt.edu"]
+    start_urls = ["https://selfservice.banner.vt.edu/ssb/HZSKVTSC.P_ProcRequest"]
     
     def __init__(self, *args, **kwargs):
         super(SectionsSpider, self).__init__(*args, **kwargs)
