@@ -80,7 +80,7 @@ class ScheduleFormatter:
         return {
             "days": ordered_schedule,
             "crns": crn_dict,
-            "locations": location_dict
+            "locations": location_dict,
         }
         
     def print_ranked_schedules(self, top_schedules, top_n=10):
@@ -106,7 +106,8 @@ class ScheduleFormatter:
                     "name": f"Schedule {i}",
                     "score": score,
                     "days": formatted_schedule_data["days"],
-                    "crns": formatted_schedule_data["crns"]
+                    "crns": formatted_schedule_data["crns"],
+                    "locations": formatted_schedule_data["locations"],
                 }
                 formatted_schedules_list.append(formatted_schedule)
             except Exception as e:
