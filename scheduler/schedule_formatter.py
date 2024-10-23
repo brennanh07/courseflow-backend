@@ -35,6 +35,8 @@ class ScheduleFormatter:
         day_schedule = defaultdict(list)
         crn_dict = {}
         location_dict = {}
+        professor_dict = {}
+        gpa_dict = {}
         
         for crn, section_times in schedule.items():
             for section_time in section_times:
@@ -62,6 +64,8 @@ class ScheduleFormatter:
                         crn_dict[section_time.crn.course] = section_time.crn.crn
                         
                     location_dict[section_time.crn.course] = section_time.crn.location
+                    professor_dict[section_time.crn.course] = section_time.crn.professor
+                    gpa_dict[section_time.crn.course] = section_time.crn.avg_gpa
                     
                 else:
                     pass
@@ -81,6 +85,8 @@ class ScheduleFormatter:
             "days": ordered_schedule,
             "crns": crn_dict,
             "locations": location_dict,
+            "professors": professor_dict,
+            "gpas": gpa_dict
         }
         
     def print_ranked_schedules(self, top_schedules, top_n=10):
@@ -108,6 +114,8 @@ class ScheduleFormatter:
                     "days": formatted_schedule_data["days"],
                     "crns": formatted_schedule_data["crns"],
                     "locations": formatted_schedule_data["locations"],
+                    "professors": formatted_schedule_data["professors"],
+                    "gpas": formatted_schedule_data["gpas"],
                 }
                 formatted_schedules_list.append(formatted_schedule)
             except Exception as e:
