@@ -33,6 +33,7 @@ class Section(models.Model):
     professor = models.CharField(max_length=100)
     location = models.CharField(max_length=100)
     exam_code = models.CharField(max_length=100)
+    avg_gpa = models.FloatField(null=True, blank=True)
     
     def __str__(self):
         return (f"{self.crn}: {self.course}")
@@ -105,4 +106,32 @@ class ScheduleLog(models.Model):
     crns = models.JSONField()
     score = models.FloatField()
     created_at = models.DateTimeField(auto_now_add=True)
+    
+class GradeDistribution(models.Model):
+    academic_year = models.CharField(max_length=100)
+    term = models.CharField(max_length=100)
+    subject = models.CharField(max_length=100)
+    course = models.CharField(max_length=100)
+    title = models.CharField(max_length=100)
+    full_course = models.CharField(max_length=100)
+    professor = models.CharField(max_length=100)
+    gpa = models.FloatField()
+    a = models.FloatField(null=True, blank=True)
+    a_minus = models.FloatField(null=True, blank=True)
+    b_plus = models.FloatField(null=True, blank=True)
+    b = models.FloatField(null=True, blank=True)
+    b_minus = models.FloatField(null=True, blank=True)
+    c_plus = models.FloatField(null=True, blank=True)
+    c = models.FloatField(null=True, blank=True)
+    c_minus = models.FloatField(null=True, blank=True)
+    d_plus = models.FloatField(null=True, blank=True)
+    d = models.FloatField(null=True, blank=True)
+    d_minus = models.FloatField(null=True, blank=True)
+    f = models.FloatField(null=True, blank=True)
+    withdraws = models.FloatField(null=True, blank=True)
+    graded_enrollment = models.FloatField(null=True, blank=True)
+    crn = models.CharField(max_length=100)
+    credit_hours = models.IntegerField()
+    
+    
 

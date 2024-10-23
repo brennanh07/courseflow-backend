@@ -34,6 +34,7 @@ class ScheduleFormatter:
         """
         day_schedule = defaultdict(list)
         crn_dict = {}
+        location_dict = {}
         
         for crn, section_times in schedule.items():
             for section_time in section_times:
@@ -59,6 +60,9 @@ class ScheduleFormatter:
                 if hasattr(section_time.crn, 'course'):
                     if section_time.crn.course not in crn_dict:
                         crn_dict[section_time.crn.course] = section_time.crn.crn
+                        
+                    location_dict[section_time.crn.course] = section_time.crn.location
+                    
                 else:
                     pass
                     # logger.error(f"section_time.crn does not have 'course' attribute: {section_time.crn}")
@@ -75,7 +79,8 @@ class ScheduleFormatter:
             
         return {
             "days": ordered_schedule,
-            "crns": crn_dict
+            "crns": crn_dict,
+            "locations": location_dict
         }
         
     def print_ranked_schedules(self, top_schedules, top_n=10):
