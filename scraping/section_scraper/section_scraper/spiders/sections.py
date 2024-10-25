@@ -283,6 +283,7 @@ class SectionsSpider(scrapy.Spider):
                     try:
                         # Extract last name from professor field
                         professor_last_name = section.professor.split()[-1]
+                        # print(professor_last_name)
                         
                         # Try to find matching grade distributions
                         matching_distributions = GradeDistribution.objects.filter(
