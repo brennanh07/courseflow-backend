@@ -104,7 +104,7 @@ class SectionsSpider(scrapy.Spider):
     def parse(self, response):
         subject = response.meta["subject"]
         # logger.info(f"Parsing response for subject: {subject}")
-        
+
         # log raw html response
         # subject = response.meta["subject"]
         # filename = f"sections_{subject}.html"
@@ -113,7 +113,7 @@ class SectionsSpider(scrapy.Spider):
 
         rows = response.xpath("//table[@class='dataentrytable']/tr[position()>1]")
         # logger.info(f"Found {len(rows)} rows to process for subject {subject}")
-        
+
         for row in rows:
             cells = row.xpath(".//td")
             if len(cells) == 10 or len(cells) == 9:
@@ -132,7 +132,9 @@ class SectionsSpider(scrapy.Spider):
                 # logger.debug("Processing arranged row")
                 self.parse_arranged(cells)
             else:
-                logger.warning(f"Skipping row with unexpected number of cells: {len(cells)}")
+                logger.warning(
+                    f"Skipping row with unexpected number of cells: {len(cells)}"
+                )
                 continue
 
     def parse_additional_time(self, cells):
@@ -269,7 +271,7 @@ class SectionsSpider(scrapy.Spider):
         except ValueError as e:
             logger.error(f"Failed to convert time {time_str}: {e}")
             raise
-        
+
     def update_section_gpas(self):
         """Update GPA values for all sections based on matching GradeDistribution records."""
         logger.info("Starting GPA update for sections...")
@@ -284,17 +286,21 @@ class SectionsSpider(scrapy.Spider):
                         # Extract last name from professor field
                         professor_last_name = section.professor.split()[-1]
                         # print(professor_last_name)
-                        
+
                         # Try to find matching grade distributions
                         matching_distributions = GradeDistribution.objects.filter(
                             full_course=section.course,
-                            professor__icontains=professor_last_name
+                            professor__icontains=professor_last_name,
                         )
 
                         if matching_distributions.exists():
                             # Calculate average GPA across all matching distributions
-                            avg_gpa = matching_distributions.aggregate(Avg('gpa'))['gpa__avg']
-                            rounded_gpa = Decimal(str(avg_gpa)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP) 
+                            avg_gpa = matching_distributions.aggregate(Avg("gpa"))[
+                                "gpa__avg"
+                            ]
+                            rounded_gpa = Decimal(str(avg_gpa)).quantize(
+                                Decimal("0.01"), rounding=ROUND_HALF_UP
+                            )
                             section.avg_gpa = rounded_gpa
                             section.save()
                             updated_count += 1
@@ -304,9 +310,13 @@ class SectionsSpider(scrapy.Spider):
                             # logger.warning(f"No GPA data found for section {section.crn}: {section.course} with professor last name {professor_last_name}")
 
                     except Exception as e:
-                        logger.error(f"Error processing section {section.crn}: {str(e)}")
+                        logger.error(
+                            f"Error processing section {section.crn}: {str(e)}"
+                        )
 
-            logger.info(f"GPA update complete - Updated: {updated_count}, Not found: {not_found_count}")
+            logger.info(
+                f"GPA update complete - Updated: {updated_count}, Not found: {not_found_count}"
+            )
         except Exception as e:
             logger.error(f"Error during GPA update transaction: {str(e)}")
 
@@ -326,17 +336,19 @@ class SectionsSpider(scrapy.Spider):
                 "INSERT INTO scheduler_section (crn, course, title, class_type, modality, credit_hours, capacity, professor, location, exam_code, avg_gpa) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 self.sections_data,
             )
-            
-            logger.info(f"Inserting {len(self.section_times_data)} section times into database")
+
+            logger.info(
+                f"Inserting {len(self.section_times_data)} section times into database"
+            )
             self.cursor.executemany(
                 "INSERT INTO scheduler_sectiontime (crn_id, days, begin_time, end_time) VALUES (%s, %s, %s, %s)",
                 self.section_times_data,
             )
             self.conn.commit()
             logger.info("Successfully committed all data to database")
-            
+
             self.update_section_gpas()
-            
+
         except Exception as e:
             logger.error(f"Database error during final insert: {e}")
             print("An error occurred:", e)
