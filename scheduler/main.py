@@ -24,12 +24,11 @@ def process_schedules(courses, breaks, preferences, max_schedules=10):
     
     # Step 1: Fetch sections from the database
     section_fetcher = SectionFetcher(courses)
-    section_dict, section_time_dict = section_fetcher.fetch_sections()
+    section_dict, section_time_dict, missing_sections = section_fetcher.fetch_sections()
     
-    # Check if any courses have no sections found
-    missing_courses = set(courses) - set(section_dict.keys()) # Identify missing courses by set difference
-    if missing_courses:
-        return [f"No sections found for {course}" for course in missing_courses] # Return error message for each missing course
+    if missing_sections:
+        error_messages = [f"No sections found for {course}" for course in missing_sections]
+        return error_messages
     
     # Step 2: Generate and score valid schedules dynamically
     # logger.info("Generating schedules")
