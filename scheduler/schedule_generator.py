@@ -135,6 +135,7 @@ class ScheduleGenerator:
         self.preferences = preferences
         self.max_schedules = max_schedules
         self.scorer = ScheduleScorer(self.preferences)
+        self.schedule_count = 0
 
         # Group sections by course for efficient processing
         self.course_sections = defaultdict(list)
@@ -173,6 +174,8 @@ class ScheduleGenerator:
         if thread.is_alive():
             print("Schedule generation timed out")
             return ["timeout"]
+        
+        print(f"Total schedules generated: {self.schedule_count}")
 
         # Convert negative scores back to positive and sort
         result = [(-element.score, element.schedule) for element in heap]
@@ -206,6 +209,8 @@ class ScheduleGenerator:
         if course_index == len(self.sorted_courses):
             score = self.scorer.score_schedule(tuple(flat_schedule))
             element = ScheduleHeapElement(-score, current_schedule.copy())
+            
+            self.schedule_count += 1
 
             # Update heap with new schedule if it qualifies
             if len(heap) < self.max_schedules:

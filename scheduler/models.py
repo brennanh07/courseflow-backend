@@ -133,5 +133,50 @@ class GradeDistribution(models.Model):
     crn = models.CharField(max_length=100)
     credit_hours = models.IntegerField()
     
+class SectionOpenOrClosed(models.Model):
+    crn = models.IntegerField(primary_key=True)
+    course = models.CharField(max_length=100)
+    title = models.CharField(max_length=100, default="")
+    class_type = models.CharField(max_length=100)
+    modality = models.CharField(max_length=100)
+    credit_hours = models.CharField(max_length=100)
+    capacity = models.CharField(max_length=100)
+    # professor = models.ForeignKey("Professor", on_delete=models.CASCADE)
+    professor = models.CharField(max_length=100)
+    location = models.CharField(max_length=100)
+    exam_code = models.CharField(max_length=100)
+    avg_gpa = models.FloatField(null=True, blank=True)
+    
+    def __str__(self):
+        return (f"{self.crn}: {self.course}")
+    
+class SectionTimeOpenOrClosed(models.Model):
+    crn = models.ForeignKey("SectionOpenOrClosed", on_delete=models.CASCADE)
+    days = models.CharField(max_length=100)
+    begin_time = models.TimeField()
+    end_time = models.TimeField()
+    
+    def __str__(self):
+        return (f"{self.crn}: {self.days} {self.begin_time} - {self.end_time}")
+    
+    # Define a less-than method to compare SectionTime instances
+    def __lt__(self, other):
+        if self.begin_time == other.begin_time:
+            return self.end_time < other.end_time
+        return self.begin_time < other.begin_time
+    
+    def __gt__(self, other):
+        if self.begin_time == other.begin_time:
+            return self.end_time > other.end_time
+        return self.begin_time > other.begin_time
+    
+    def __hash__(self):
+        return hash((self.crn_id, self.days, self.begin_time, self.end_time))
+
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return (self.crn_id, self.days, self.begin_time, self.end_time) == \
+            (other.crn_id, other.days, other.begin_time, other.end_time)
     
 

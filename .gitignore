@@ -157,3 +157,14 @@ logging_config.py
 backend.0\scheduler\logging_config.py
 
 Grade Distribution.csv
+
+# Ignore all files in the data directory
+data/*
+/data
+
+# Ignore all .csv files
+*.csv
+.csv*
+
+grade_distributions.csv
+

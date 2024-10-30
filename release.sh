@@ -2,4 +2,4 @@
 set -e
 python manage.py migrate
 python manage.py makesuperuser
-python manage.py runspider
+# python manage.py runspider
