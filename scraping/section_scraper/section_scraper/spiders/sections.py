@@ -119,14 +119,14 @@ class SectionsSpider(scrapy.Spider):
                 "CREATE TEMPORARY TABLE temp_section LIKE scheduler_section",
                 "CREATE TEMPORARY TABLE temp_sectiontime LIKE scheduler_sectiontime",
                 "CREATE TEMPORARY TABLE temp_sectionopenorclosed LIKE scheduler_sectionopenorclosed",
-                "CREATE TEMPORARY TABLE temp_sectiontimeopenorclosed LIKE scheduler_sectiontimeopenorclosed"
+                "CREATE TEMPORARY TABLE temp_sectiontimeopenorclosed LIKE scheduler_sectiontimeopenorclosed",
             ]
-            
+
             for statement in statements:
                 self.cursor.execute(statement)
                 # Fetch any results (even if there are none) to clear the connection
                 self.cursor.fetchall()
-            
+
             self.conn.commit()
             logger.info("Successfully created temporary tables")
 
@@ -134,9 +134,9 @@ class SectionsSpider(scrapy.Spider):
             with self.conn.cursor() as subjects_cursor:
                 subjects_cursor.execute("SELECT abbreviation FROM scheduler_subject")
                 subjects = [row[0] for row in subjects_cursor.fetchall()]
-                
+
             logger.info(f"Retrieved {len(subjects)} subjects to process")
-            
+
             return self.make_requests(subjects)
 
         except MySQLdb.Error as e:
@@ -455,78 +455,120 @@ class SectionsSpider(scrapy.Spider):
 
     def update_section_gpas(self):
         """
-        Update GPA values for both open sections and all sections tables.
-
-        This method calculates and updates the average GPA for each section based on
-        historical grade distribution data. It processes both open sections and
-        all sections (open/closed) separately.
-
-        Note:
-            - GPA calculations are based on matching professor's last name
-            - Results are rounded to two decimal places
+        Update GPA values for both open sections and all sections tables efficiently.
+        
+        Uses batch processing and prefetching to minimize database queries:
+        1. Prefetches all relevant grade distributions
+        2. Creates professor-course to GPA mapping
+        3. Updates sections in batches
         """
-        logger.info("Starting GPA update for all section tables...")
+        logger.info("Starting optimized GPA update for all section tables...")
+        
+        try:
+            # Prefetch all grade distributions and create lookup dictionary
+            gpa_lookup = self._build_gpa_lookup()
+            
+            # Process both section types using the same lookup table
+            self._batch_update_gpas(Section, gpa_lookup, "open sections")
+            self._batch_update_gpas(SectionOpenOrClosed, gpa_lookup, "all sections")
+            
+        except Exception as e:
+            logger.error(f"Error during GPA update process: {str(e)}")
 
-        # Update GPAs for open sections
-        self._update_gpas_for_table(Section, "open sections")
-
-        # Update GPAs for all sections (open and closed)
-        self._update_gpas_for_table(SectionOpenOrClosed, "all sections")
-
-    def _update_gpas_for_table(self, model_class, table_description):
+    def _build_gpa_lookup(self):
         """
-        Helper method to update GPAs for a specific section model.
+        Build an efficient lookup dictionary for GPAs based on course and professor.
+        
+        Returns:
+            dict: Nested dictionary mapping {course: {professor_last_name: avg_gpa}}
+        """
+        gpa_lookup = {}
+        
+        try:
+            # Fetch all grade distributions in one query
+            distributions = GradeDistribution.objects.values(
+                'full_course', 'professor', 'gpa'
+            ).iterator()
+            
+            # Process all distributions to build lookup dictionary
+            for dist in distributions:
+                course = dist['full_course']
+                professor_last_name = dist['professor'].split()[-1].lower()
+                gpa = float(dist['gpa'])
+                
+                # Initialize course dict if needed
+                if course not in gpa_lookup:
+                    gpa_lookup[course] = {}
+                
+                # Append GPA to professor's list for averaging
+                if professor_last_name not in gpa_lookup[course]:
+                    gpa_lookup[course][professor_last_name] = {'total': gpa, 'count': 1}
+                else:
+                    current = gpa_lookup[course][professor_last_name]
+                    current['total'] += gpa
+                    current['count'] += 1
+            
+            # Calculate averages
+            for course in gpa_lookup:
+                for prof in gpa_lookup[course]:
+                    avg = gpa_lookup[course][prof]['total'] / gpa_lookup[course][prof]['count']
+                    gpa_lookup[course][prof] = Decimal(str(avg)).quantize(
+                        Decimal('0.01'), 
+                        rounding=ROUND_HALF_UP
+                    )
+            
+            return gpa_lookup
+            
+        except Exception as e:
+            logger.error(f"Error building GPA lookup: {str(e)}")
+            return {}
 
+    def _batch_update_gpas(self, model_class, gpa_lookup, table_description):
+        """
+        Update GPAs for a specific section model using batch processing.
+        
         Args:
-            model_class (django.db.models.Model): Django model class (Section or SectionOpenOrClosed)
-            table_description (str): Description of the table for logging purposes
-
-        Note:
-            This method uses database transactions to ensure data consistency
-            and handles exceptions for each section independently.
+            model_class: Django model class (Section or SectionOpenOrClosed)
+            gpa_lookup: Prebuilt GPA lookup dictionary
+            table_description: Description for logging purposes
         """
+        BATCH_SIZE = 1000
         updated_count = 0
         not_found_count = 0
-
+        
         try:
-            with transaction.atomic():
-                # Process each section in the model
-                for section in model_class.objects.all():
-                    try:
-                        # Extract professor's last name for matching
-                        professor_last_name = section.professor.split()[-1]
-
-                        # Find matching grade distributions
-                        matching_distributions = GradeDistribution.objects.filter(
-                            full_course=section.course,
-                            professor__icontains=professor_last_name,
-                        )
-
-                        if matching_distributions.exists():
-                            # Calculate and round average GPA
-                            avg_gpa = matching_distributions.aggregate(Avg("gpa"))[
-                                "gpa__avg"
-                            ]
-                            rounded_gpa = Decimal(str(avg_gpa)).quantize(
-                                Decimal("0.01"), rounding=ROUND_HALF_UP
-                            )
-                            section.avg_gpa = rounded_gpa
-                            section.save()
-                            updated_count += 1
-                        else:
-                            not_found_count += 1
-
-                    except Exception as e:
-                        logger.error(
-                            f"Error processing {table_description} section {section.crn}: {str(e)}"
-                        )
-
+            # Process sections in batches
+            sections = model_class.objects.all()
+            updates = []
+            
+            for section in sections.iterator():
+                professor_last_name = section.professor.split()[-1].lower()
+                course = section.course
+                
+                if course in gpa_lookup and professor_last_name in gpa_lookup[course]:
+                    section.avg_gpa = gpa_lookup[course][professor_last_name]
+                    updates.append(section)
+                    updated_count += 1
+                else:
+                    not_found_count += 1
+                
+                # Perform batch update when batch size is reached
+                if len(updates) >= BATCH_SIZE:
+                    model_class.objects.bulk_update(updates, ['avg_gpa'])
+                    updates = []
+            
+            # Update remaining sections
+            if updates:
+                model_class.objects.bulk_update(updates, ['avg_gpa'])
+            
             logger.info(
-                f"GPA update complete for {table_description} - Updated: {updated_count}, Not found: {not_found_count}"
+                f"GPA update complete for {table_description} - "
+                f"Updated: {updated_count}, Not found: {not_found_count}"
             )
+            
         except Exception as e:
             logger.error(
-                f"Error during GPA update transaction for {table_description}: {str(e)}"
+                f"Error updating GPAs for {table_description}: {str(e)}"
             )
 
     def close(self, reason):
@@ -568,7 +610,7 @@ class SectionsSpider(scrapy.Spider):
             # Update existing records and insert new ones
             logger.info("Updating existing records and inserting new ones")
 
-            # Update open sections - Execute each statement separately
+            # First, handle the main section tables
             update_statements = [
                 """
                 UPDATE scheduler_section s
@@ -591,18 +633,6 @@ class SectionsSpider(scrapy.Spider):
                 WHERE s.crn IS NULL
                 """,
                 """
-                DELETE st FROM scheduler_sectiontime st
-                LEFT JOIN temp_sectiontime tst ON st.crn_id = tst.crn_id AND st.days = tst.days
-                WHERE tst.crn_id IS NULL
-                """,
-                """
-                INSERT INTO scheduler_sectiontime
-                SELECT tst.* FROM temp_sectiontime tst
-                LEFT JOIN scheduler_sectiontime st 
-                ON tst.crn_id = st.crn_id AND tst.days = st.days
-                WHERE st.id IS NULL
-                """,
-                """
                 UPDATE scheduler_sectionopenorclosed s
                 JOIN temp_sectionopenorclosed ts ON s.crn = ts.crn
                 SET 
@@ -622,23 +652,37 @@ class SectionsSpider(scrapy.Spider):
                 LEFT JOIN scheduler_sectionopenorclosed s ON ts.crn = s.crn
                 WHERE s.crn IS NULL
                 """,
-                """
-                DELETE st FROM scheduler_sectiontimeopenorclosed st
-                LEFT JOIN temp_sectiontimeopenorclosed tst 
-                ON st.crn_id = tst.crn_id AND st.days = tst.days
-                WHERE tst.crn_id IS NULL
-                """,
-                """
-                INSERT INTO scheduler_sectiontimeopenorclosed
-                SELECT tst.* FROM temp_sectiontimeopenorclosed tst
-                LEFT JOIN scheduler_sectiontimeopenorclosed st 
-                ON tst.crn_id = st.crn_id AND st.days = st.days
-                WHERE st.id IS NULL
-                """
             ]
 
-            # Execute each statement separately and commit
+            # Execute section table updates
             for statement in update_statements:
+                self.cursor.execute(statement)
+                self.conn.commit()
+
+            # Then, handle the section time tables with proper cleanup
+            time_update_statements = [
+                # Clear existing time entries for sections we're updating
+                """
+                DELETE st FROM scheduler_sectiontime st
+                WHERE st.crn_id IN (SELECT crn FROM temp_section)
+                """,
+                """
+                DELETE st FROM scheduler_sectiontimeopenorclosed st
+                WHERE st.crn_id IN (SELECT crn FROM temp_sectionopenorclosed)
+                """,
+                # Insert new time entries
+                """
+                INSERT INTO scheduler_sectiontime (crn_id, days, begin_time, end_time)
+                SELECT crn_id, days, begin_time, end_time FROM temp_sectiontime
+                """,
+                """
+                INSERT INTO scheduler_sectiontimeopenorclosed (crn_id, days, begin_time, end_time)
+                SELECT crn_id, days, begin_time, end_time FROM temp_sectiontimeopenorclosed
+                """,
+            ]
+
+            # Execute time table updates
+            for statement in time_update_statements:
                 self.cursor.execute(statement)
                 self.conn.commit()
 
@@ -655,18 +699,17 @@ class SectionsSpider(scrapy.Spider):
         finally:
             # Drop temporary tables and close connections
             try:
-                # Execute each DROP statement separately
                 drop_statements = [
                     "DROP TEMPORARY TABLE IF EXISTS temp_section",
                     "DROP TEMPORARY TABLE IF EXISTS temp_sectiontime",
                     "DROP TEMPORARY TABLE IF EXISTS temp_sectionopenorclosed",
-                    "DROP TEMPORARY TABLE IF EXISTS temp_sectiontimeopenorclosed"
+                    "DROP TEMPORARY TABLE IF EXISTS temp_sectiontimeopenorclosed",
                 ]
-                
+
                 for statement in drop_statements:
                     self.cursor.execute(statement)
                     self.conn.commit()
-                    
+
             except Exception as e:
                 logger.error(f"Error dropping temporary tables: {e}")
 

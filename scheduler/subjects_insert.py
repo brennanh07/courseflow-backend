@@ -1,5 +1,19 @@
-from scheduler.models import Subject
+import os
+import sys
+import django
 import re
+
+# Add the project root directory to the Python path
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(project_root)
+
+# Configure Django settings before importing models
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'class_scheduler.settings')
+django.setup()
+
+# Now we can import Django models
+from scheduler.models import Subject
+
 
 js_subject_code = """
 document.ttform.subj_code.options[1]=new Option("AAD - Architecture, Arts, and Design","AAD",false, false);
