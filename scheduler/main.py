@@ -33,7 +33,7 @@ def process_schedules(courses, breaks, preferences, max_schedules=10):
     # Step 2: Generate and score valid schedules dynamically
     # logger.info("Generating schedules")
     schedule_generator = ScheduleGenerator(section_dict, section_time_dict, breaks, preferences, max_schedules)
-    top_schedules = schedule_generator.generate_schedules()
+    top_schedules, total_schedules = schedule_generator.generate_schedules()
     
     # logger.info(f"Generated {len(top_schedules)} schedules")
     
@@ -42,4 +42,4 @@ def process_schedules(courses, breaks, preferences, max_schedules=10):
     formatted_schedules = formatter.print_ranked_schedules(top_schedules, top_n=max_schedules)
     
     # logger.info("Schedule processing complete")
-    return formatted_schedules
+    return (formatted_schedules, total_schedules)

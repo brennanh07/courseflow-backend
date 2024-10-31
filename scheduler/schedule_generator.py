@@ -179,7 +179,7 @@ class ScheduleGenerator:
 
         # Convert negative scores back to positive and sort
         result = [(-element.score, element.schedule) for element in heap]
-        return sorted(result, key=lambda x: x[0], reverse=True)
+        return (sorted(result, key=lambda x: x[0], reverse=True), self.schedule_count)
 
     def _dfs(
         self,

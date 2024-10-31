@@ -79,15 +79,29 @@ class GenerateScheduleView(APIView):
             # logger.debug(f"Processed user input: courses={courses}, breaks={breaks}, preferences={preferences}")
             
             try:
-                # Generate, score, and format schedules
-                generated_schedules = process_schedules(
-                    courses=courses,
-                    breaks=breaks,
-                    preferences=preferences,
-                    max_schedules=10
-                )
+                
+                try:
+                    # Generate, score, and format schedules
+                    generated_schedules, total_schedules = process_schedules(
+                        courses=courses,
+                        breaks=breaks,
+                        preferences=preferences,
+                        max_schedules=10
+                    )
+                except: # If total_schedules is not returned
+                    
+                    generated_schedules = process_schedules(
+                        courses=courses,
+                        breaks=breaks,
+                        preferences=preferences,
+                        max_schedules=10
+                    )
+                    
                 # logger.info(f"Successfully generated {len(generated_schedules)} schedules")
-                return JsonResponse({"schedules": generated_schedules}, status=status.HTTP_200_OK)
+                try:
+                    return JsonResponse({"schedules": generated_schedules, "total_schedules": total_schedules}, status=status.HTTP_200_OK)
+                except:
+                    return JsonResponse({"schedules": generated_schedules}, status=status.HTTP_200_OK)
             
             except Exception as e:
                 # logger.error(f"Error generating schedules: {str(e)}")
