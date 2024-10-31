@@ -1,3 +1,3 @@
 #!/bin/bash
 set -e
-gunicorn class_scheduler.wsgi --log-file -
+gunicorn --timeout 120 --workers 3 --log-file - class_scheduler.wsgi:application
