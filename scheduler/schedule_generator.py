@@ -219,14 +219,15 @@ class ScheduleGenerator:
             element = ScheduleHeapElement(-score, current_schedule.copy())
             self.schedule_count += 1
 
-            # Update heap with new schedule if it qualifies
             if len(heap) < self.max_schedules:
                 heapq.heappush(heap, element)
                 self.seen_scores.add(score)
             elif -score < heap[0].score:
-                # Remove the old score and add the new one
-                old_score = -heap[0].score
-                self.seen_scores.remove(old_score)
+                try:
+                    old_score = -heap[0].score
+                    self.seen_scores.remove(old_score)
+                except KeyError:
+                    pass  # If old score wasn't in set, that's okay
                 self.seen_scores.add(score)
                 heapq.heapreplace(heap, element)
             return
