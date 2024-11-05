@@ -137,6 +137,8 @@ class ScheduleGenerator:
         self.scorer = ScheduleScorer(self.preferences)
         self.schedule_count = 0
 
+        self.seen_scores = set()
+
         # Group sections by course for efficient processing
         self.course_sections = defaultdict(list)
         for crn, section in section_dict.items():
@@ -165,6 +167,7 @@ class ScheduleGenerator:
             excessive runtime in cases with many possible combinations.
         """
         heap: List[ScheduleHeapElement] = []
+        self.seen_score.clear()  # Clear seen scores for each new generation
 
         # Start DFS in a separate thread with timeout
         thread = threading.Thread(target=self._dfs, args=(0, {}, [], heap))
@@ -208,14 +211,23 @@ class ScheduleGenerator:
         # Base case: complete schedule found
         if course_index == len(self.sorted_courses):
             score = self.scorer.score_schedule(tuple(flat_schedule))
-            element = ScheduleHeapElement(-score, current_schedule.copy())
 
+            # Skip if we've seen this score before
+            if score in self.seen_scores:
+                return
+
+            element = ScheduleHeapElement(-score, current_schedule.copy())
             self.schedule_count += 1
 
             # Update heap with new schedule if it qualifies
             if len(heap) < self.max_schedules:
                 heapq.heappush(heap, element)
+                self.seen_scores.add(score)
             elif -score < heap[0].score:
+                # Remove the old score and add the new one
+                old_score = -heap[0].score
+                self.seen_scores.remove(old_score)
+                self.seen_scores.add(score)
                 heapq.heapreplace(heap, element)
             return
 
