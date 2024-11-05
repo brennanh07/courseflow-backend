@@ -1,5 +1,6 @@
 from collections import defaultdict
 
+
 # from logging_config import loggers
 
 # logger = loggers['schedule_formatter']
@@ -98,7 +99,7 @@ class ScheduleFormatter:
             "gpas": gpa_dict,
         }
 
-    def print_ranked_schedules(self, top_schedules, top_n=10):
+    def print_ranked_schedules(self, top_schedules, top_n=20):
         """
         Format and rank the top schedules.
 
@@ -117,13 +118,9 @@ class ScheduleFormatter:
         for i, (score, schedule) in enumerate(top_schedules[:top_n], 1):
             try:
                 formatted_schedule_data = self.format_schedule(schedule)
-
-                non_null_gpas = [
-                    gpa
-                    for gpa in formatted_schedule_data["gpas"].values()
-                    if gpa is not None
-                ]
-
+                
+                non_null_gpas = [gpa for gpa in formatted_schedule_data["gpas"].values() if gpa is not None]
+                
                 formatted_schedule = {
                     "name": f"Schedule {i}",
                     "score": score,
@@ -132,11 +129,7 @@ class ScheduleFormatter:
                     "locations": formatted_schedule_data["locations"],
                     "professors": formatted_schedule_data["professors"],
                     "gpas": formatted_schedule_data["gpas"],
-                    "schedule_total_avg_gpa": (
-                        round((sum(non_null_gpas) / len(non_null_gpas)), 2)
-                        if non_null_gpas
-                        else None
-                    ),
+                    "schedule_total_avg_gpa": (sum(non_null_gpas) / len(non_null_gpas)) if non_null_gpas else None,
                 }
                 formatted_schedules_list.append(formatted_schedule)
             except Exception as e:
