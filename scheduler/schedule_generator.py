@@ -167,7 +167,7 @@ class ScheduleGenerator:
             excessive runtime in cases with many possible combinations.
         """
         heap: List[ScheduleHeapElement] = []
-        self.seen_score.clear()  # Clear seen scores for each new generation
+        self.seen_scores.clear()  # Clear seen scores for each new generation
 
         # Start DFS in a separate thread with timeout
         thread = threading.Thread(target=self._dfs, args=(0, {}, [], heap))
