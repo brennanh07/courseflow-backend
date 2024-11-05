@@ -156,7 +156,7 @@ class ScheduleGenerator:
         schedules sorted by score in descending order.
 
         Returns:
-            List[Tuple[float, Dict]]: List of (score, schedule) pairs, sorted
+            List[Tuple[float, Dict]]: List of (score, [schedule]) pairs, sorted
             by score in descending order. Returns ["timeout"] if the generation
             process exceeds the time limit.
 
@@ -174,11 +174,11 @@ class ScheduleGenerator:
         if thread.is_alive():
             print("Schedule generation timed out")
             return ["timeout"]
-        
+
         print(f"Total schedules generated: {self.schedule_count}")
 
         # Convert negative scores back to positive and sort
-        result = [(-element.score, element.schedule) for element in heap]
+        result = [(-element.score, [element.schedule]) for element in heap]
         return (sorted(result, key=lambda x: x[0], reverse=True), self.schedule_count)
 
     def _dfs(
@@ -209,7 +209,7 @@ class ScheduleGenerator:
         if course_index == len(self.sorted_courses):
             score = self.scorer.score_schedule(tuple(flat_schedule))
             element = ScheduleHeapElement(-score, current_schedule.copy())
-            
+
             self.schedule_count += 1
 
             # Update heap with new schedule if it qualifies
