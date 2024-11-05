@@ -116,7 +116,7 @@ class ScheduleGenerator:
         section_time_dict: Dict[str, List[Any]],
         breaks: List[Dict[str, int]],
         preferences: Dict[str, Any],
-        max_schedules: int = 10,
+        max_schedules: int = 20,
     ) -> None:
         """
         Initialize the schedule generator with course data and constraints.
