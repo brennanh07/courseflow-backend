@@ -86,7 +86,7 @@ class GenerateScheduleView(APIView):
                         courses=courses,
                         breaks=breaks,
                         preferences=preferences,
-                        max_schedules=10
+                        max_schedules=20
                     )
                 except: # If total_schedules is not returned
                     
@@ -94,7 +94,7 @@ class GenerateScheduleView(APIView):
                         courses=courses,
                         breaks=breaks,
                         preferences=preferences,
-                        max_schedules=10
+                        max_schedules=20
                     )
                     
                 # logger.info(f"Successfully generated {len(generated_schedules)} schedules")
