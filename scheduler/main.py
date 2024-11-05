@@ -2,7 +2,7 @@ from .fetch_sections import SectionFetcher
 from .schedule_formatter import ScheduleFormatter
 from .schedule_generator import ScheduleGenerator
 
-def process_schedules(courses, breaks, preferences, max_schedules=10):
+def process_schedules(courses, breaks, preferences, max_schedules=20):
     """
     Main function to generate and format schedules for the given list of courses and input.
     
