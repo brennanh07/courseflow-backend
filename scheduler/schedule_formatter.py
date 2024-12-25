@@ -1,6 +1,5 @@
 from collections import defaultdict
 
-
 # from logging_config import loggers
 
 # logger = loggers['schedule_formatter']
@@ -99,7 +98,7 @@ class ScheduleFormatter:
             "gpas": gpa_dict,
         }
 
-    def print_ranked_schedules(self, top_schedules, top_n=20):
+    def print_ranked_schedules(self, top_schedules, top_n=10):
         """
         Format and rank the top schedules.
 
@@ -115,23 +114,45 @@ class ScheduleFormatter:
         """
         formatted_schedules_list = []
 
-        for i, (score, schedule) in enumerate(top_schedules[:top_n], 1):
+        for i, (score, schedule_equivalents_list) in enumerate(
+            top_schedules[:top_n], 1
+        ):
             try:
-                formatted_schedule_data = self.format_schedule(schedule)
-                
-                non_null_gpas = [gpa for gpa in formatted_schedule_data["gpas"].values() if gpa is not None]
-                
-                formatted_schedule = {
-                    "name": f"Schedule {i}",
-                    "score": score,
-                    "days": formatted_schedule_data["days"],
-                    "crns": formatted_schedule_data["crns"],
-                    "locations": formatted_schedule_data["locations"],
-                    "professors": formatted_schedule_data["professors"],
-                    "gpas": formatted_schedule_data["gpas"],
-                    "schedule_total_avg_gpa": (sum(non_null_gpas) / len(non_null_gpas)) if non_null_gpas else None,
-                }
-                formatted_schedules_list.append(formatted_schedule)
+                # Initialize an empty list to hold all formatted schedules in the equivalence list
+                formatted_schedule_variants = []
+
+                for schedule in schedule_equivalents_list:
+                    formatted_schedule_data = self.format_schedule(schedule)
+
+                    non_null_gpas = [
+                        gpa
+                        for gpa in formatted_schedule_data["gpas"].values()
+                        if gpa is not None
+                    ]
+
+                    formatted_schedule_variants.append(
+                        {
+                            "days": formatted_schedule_data["days"],
+                            "crns": formatted_schedule_data["crns"],
+                            "locations": formatted_schedule_data["locations"],
+                            "professors": formatted_schedule_data["professors"],
+                            "gpas": formatted_schedule_data["gpas"],
+                            "schedule_total_avg_gpa": (
+                                round((sum(non_null_gpas) / len(non_null_gpas)), 2)
+                                if non_null_gpas
+                                else None
+                            ),
+                        }
+                    )
+
+                formatted_schedules_list.append(
+                    {
+                        "name": f"Schedule {i}",
+                        "score": score,
+                        "variants": formatted_schedule_variants,  # Include all formatted schedule variants
+                    }
+                )
+
             except Exception as e:
                 print(f"Error formatting schedule {i}: {e}")
                 # logger.error(f"Error formatting schedule {i}: {e}")
